@@ -1,7 +1,7 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-from gestures import check_sixseven_gesture, check_smile
+from gestures import check_sixseven_gesture, check_smile, check_tongue_out
 
 mp_pose = mp.solutions.pose
 mp_face_mesh = mp.solutions.face_mesh
@@ -23,16 +23,19 @@ if not cap2.isOpened():
 try:
     smiling_emoji = cv2.imread("smile.jpg")
     straight_face_emoji = cv2.imread("plain.png")
+    tongue_out_emoji = cv2.imread("tongue_out.jpeg")
 
     if smiling_emoji is None:
         raise FileNotFoundError("smile.jpg not found")
     if straight_face_emoji is None:
         raise FileNotFoundError("plain.png not found")
+    if tongue_out_emoji is None:
+        raise FileNotFoundError("tongue_out.jpeg not found")
 
     # Resize emojis
     smiling_emoji = cv2.resize(smiling_emoji, EMOJI_WINDOW_SIZE)
     straight_face_emoji = cv2.resize(straight_face_emoji, EMOJI_WINDOW_SIZE)
-    
+    tongue_out_emoji = cv2.resize(tongue_out_emoji, EMOJI_WINDOW_SIZE)
 
 except Exception as e:
     print("Error loading emoji images!")
@@ -60,6 +63,7 @@ print("  Press 'q' to quit")
 print("  Smile for smiling emoji")
 print("  Straight face for neutral emoji")
 print("  Move hands up and down for six-seven gesture")
+print("  Stick out your tongue for tongue out emoji")
 
 
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose, \
@@ -90,7 +94,10 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
         # Other wise check for facial expressions
         if current_state != "SIX_SEVEN":
             if results_face.multi_face_landmarks:
-                if check_smile(results_face):
+
+                if check_tongue_out(results_face):
+                    current_state = "TONGUE_OUT"
+                elif check_smile(results_face):
                     current_state = "SMILING"
                 else:
                     current_state = "STRAIGHT_FACE"
@@ -106,6 +113,10 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
             emoji_to_display = cv2.resize(frame2, EMOJI_WINDOW_SIZE)
             emoji_name = "😏"
 
+        elif current_state == "TONGUE_OUT":
+            emoji_to_display = tongue_out_emoji
+            emoji_name = "😛"
+
         elif current_state == "SMILING":
             emoji_to_display = smiling_emoji
             emoji_name = "😊"
@@ -113,6 +124,7 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
         elif current_state == "STRAIGHT_FACE":
             emoji_to_display = straight_face_emoji
             emoji_name = "😐"
+
 
         else:
             emoji_to_display = blank_emoji

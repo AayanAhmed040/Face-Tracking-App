@@ -18,6 +18,9 @@ MIN_MOVEMENT = 0.02
 # Variables to track smiling
 SMILE_THRESHOLD = 0.15
 
+# Variables to track tongue out
+TONGUE_OUT_THRESHOLD = 0.25
+
 # global variables we need to modify or access
 current_state = None  # Initialize with a default value
 
@@ -82,22 +85,43 @@ def check_sixseven_gesture(pose_landmarks):
         alternating_count = 0
         return False
     
-def check_smile(results_face):  # Add results_face as parameter
-    global current_state  # Declare as global
+
+def get_mouth_dims(face_landmarks):
+    """Helper to get mouth width and height."""
+    left_corner = face_landmarks.landmark[61]
+    right_corner = face_landmarks.landmark[291]
+    upper_lip = face_landmarks.landmark[13]
+    lower_lip = face_landmarks.landmark[14]
+
+    width = ((right_corner.x - left_corner.x)**2 + (right_corner.y - left_corner.y)**2)**0.5
+    height = ((lower_lip.x - upper_lip.x)**2 + (lower_lip.y - upper_lip.y)**2)**0.5
+    return width, height, left_corner, right_corner, upper_lip, lower_lip
+
+def check_tongue_out(results_face):
+    """
+    Detects if the mouth is open vertically significantly (proxy for tongue out).
+    """
+    if results_face.multi_face_landmarks:
+        for face_landmarks in results_face.multi_face_landmarks:
+            width, height, _, _, _, _ = get_mouth_dims(face_landmarks)
+
+            if width > 0:
+                # Ratio: Height over Width. High value = mouth open vertically.
+                aspect_ratio = height / width
+                if aspect_ratio > TONGUE_OUT_THRESHOLD:
+                    return True
+    return False
+
+def check_smile(results_face):  
+    global current_state  
     
     if results_face.multi_face_landmarks:
         for face_landmarks in results_face.multi_face_landmarks:
-            left_corner = face_landmarks.landmark[291]
-            right_corner = face_landmarks.landmark[61]
-            upper_lip = face_landmarks.landmark[13]
-            lower_lip = face_landmarks.landmark[14]
-
-            mouth_width = ((right_corner.x - left_corner.x)**2 + (right_corner.y - left_corner.y)**2)**0.5
-            mouth_height = ((lower_lip.x - upper_lip.x)**2 + (lower_lip.y - upper_lip.y)**2)**0.5
+            mouth_width, mouth_height, _, _, _, _ = get_mouth_dims(face_landmarks)
 
             if mouth_width > 0:
                 mouth_aspect_ratio = mouth_height / mouth_width
-                if mouth_aspect_ratio > SMILE_THRESHOLD:
-                    current_state = "SMILING"
+                if mouth_aspect_ratio > SMILE_THRESHOLD and mouth_aspect_ratio < TONGUE_OUT_THRESHOLD:
+                    # current_state = "SMILING"
                     return True
     return False
