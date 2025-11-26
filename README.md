@@ -2,6 +2,10 @@
 
 An application which tracks faces using the device camera and displays emotes based on facial expressions or hand gestures.
 
+
+https://github.com/user-attachments/assets/c73ed99f-132f-4e86-b775-45ddfb86a30e
+
+
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-4285F4?style=for-the-badge&logo=google&logoColor=white)
