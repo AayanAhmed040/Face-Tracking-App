@@ -1,7 +1,7 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-from gestures import check_sixseven_gesture, check_smile, check_tongue_out
+from gestures import check_sixseven_gesture, check_smile, check_tongue_out, check_waving
 
 mp_pose = mp.solutions.pose
 mp_face_mesh = mp.solutions.face_mesh
@@ -13,22 +13,27 @@ WINDOW_WIDTH = 720
 WINDOW_HEIGHT = 450
 EMOJI_WINDOW_SIZE = (WINDOW_WIDTH, WINDOW_HEIGHT)
 
-# Load gif for six-seven gesture
+# Load gifs 
 cap2 = cv2.VideoCapture("sixseven.gif")
 if not cap2.isOpened():
     print("Error: Could not open sixseven.gif.")
     exit()
 
+cap3 = cv2.VideoCapture("waving.gif")
+if not cap3.isOpened():
+    print("Error: Could not open waving.gif.")
+    exit()
+
 # Load emoji images
 try:
     smiling_emoji = cv2.imread("smile.jpg")
-    straight_face_emoji = cv2.imread("plain.png")
+    straight_face_emoji = cv2.imread("plain.jpg")
     tongue_out_emoji = cv2.imread("tongue_out.jpeg")
 
     if smiling_emoji is None:
         raise FileNotFoundError("smile.jpg not found")
     if straight_face_emoji is None:
-        raise FileNotFoundError("plain.png not found")
+        raise FileNotFoundError("plain.jpg not found")
     if tongue_out_emoji is None:
         raise FileNotFoundError("tongue_out.jpeg not found")
 
@@ -64,7 +69,7 @@ print("  Smile for smiling emoji")
 print("  Straight face for neutral emoji")
 print("  Move hands up and down for six-seven gesture")
 print("  Stick out your tongue for tongue out emoji")
-
+print("  Wave your hand for waving gesture")
 
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose, \
      mp_face_mesh.FaceMesh(max_num_faces=1, min_detection_confidence=0.5, min_tracking_confidence=0.5) as face_mesh, \
@@ -89,10 +94,12 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
         if results_pose.pose_landmarks:
             if check_sixseven_gesture(results_pose.pose_landmarks.landmark):
                 current_state = "SIX_SEVEN"
-                print("Six-Seven gesture detected test 1")
+            
+            elif check_waving(results_pose.pose_landmarks.landmark):
+                current_state = "WAVING"
 
         # Other wise check for facial expressions
-        if current_state != "SIX_SEVEN":
+        if current_state != "SIX_SEVEN" and current_state != "WAVING":
             if results_face.multi_face_landmarks:
 
                 if check_tongue_out(results_face):
@@ -105,13 +112,20 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
 
         # Display appropriate emoji/gif
         if current_state == "SIX_SEVEN":
-            print("Six Seven Gesture Detected test2!")
             ret, frame2 = cap2.read()
             if not ret:
                 cap2.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 ret, frame2 = cap2.read()
             emoji_to_display = cv2.resize(frame2, EMOJI_WINDOW_SIZE)
             emoji_name = "😏"
+
+        elif current_state == "WAVING":
+            ret, frame3 = cap3.read()
+            if not ret:
+                cap3.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                ret, frame3 = cap3.read()
+            emoji_to_display = cv2.resize(frame3, EMOJI_WINDOW_SIZE)
+            emoji_name = "👋"
 
         elif current_state == "TONGUE_OUT":
             emoji_to_display = tongue_out_emoji
